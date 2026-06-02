@@ -1,0 +1,58 @@
+# Git-main override for unsloth + unsloth-zoo, applied via
+# pythonPackagesExtensions so it composes with EVERY python3 the consuming
+# nixpkgs builds — at any accelerator config (CPU / cudaSupport / rocmSupport).
+#
+# Only `src`, `version`, and the setuptools-scm pretend-version are replaced;
+# nixpkgs' own `postPatch` (strips the AGPL-licensed CLI/Studio/MOE kernels,
+# unpins setuptools, narrows the datasets guard), `pythonRelaxDeps`,
+# `pythonRemoveDeps`, `dependencies`, `patches` (unsloth-zoo's
+# dont-require-unsloth.patch) and `meta` are all INHERITED untouched. The whole
+# robust dependency stack (torch/transformers/peft/trl/… ) stays exactly as
+# nixpkgs ships it, substituted from cache.nixos.org — only the two pure-Python
+# unsloth packages track git main.
+#
+# The pinned revs + hashes are the single source of truth in ./version.json,
+# bumped daily by scripts/update.sh.
+final: prev:
+let
+  v = builtins.fromJSON (builtins.readFile ./version.json);
+
+  mkSrc =
+    repo: spec:
+    final.fetchFromGitHub {
+      owner = "unslothai";
+      inherit repo;
+      inherit (spec) rev hash;
+    };
+in
+{
+  pythonPackagesExtensions = (prev.pythonPackagesExtensions or [ ]) ++ [
+    (_pyfinal: pyprev: {
+      unsloth-zoo = pyprev.unsloth-zoo.overridePythonAttrs (old: {
+        inherit (v.unsloth-zoo) version;
+        src = mkSrc "unsloth-zoo" v.unsloth-zoo;
+
+        # A GitHub tarball carries no PKG-INFO and no .git, so setuptools-scm
+        # cannot infer the version the PyPI sdist exposes — pin it explicitly.
+        env = (old.env or { }) // {
+          SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth-zoo.version;
+        };
+      });
+
+      unsloth = pyprev.unsloth.overridePythonAttrs (old: {
+        inherit (v.unsloth) version;
+        src = mkSrc "unsloth" v.unsloth;
+
+        env = (old.env or { }) // {
+          SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth.version;
+        };
+
+        # git main can pin unsloth-zoo to a newer release than nixpkgs ships;
+        # relax so the git pair installs against each other. Extend (never
+        # replace) nixpkgs' list. New upstream dep pins surface on the daily
+        # bump's CPU build — add them here when they do (fail-loud by design).
+        pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "unsloth-zoo" ];
+      });
+    })
+  ];
+}

@@ -1,0 +1,32 @@
+{
+  "package": "unsloth-nix",
+  "description": "Unsloth (git main) packaged for NixOS — CPU/CUDA/ROCm LoRA fine-tuning envs",
+  "topics": [
+    "nix",
+    "nixos",
+    "flake",
+    "nixos-module",
+    "unsloth",
+    "fine-tuning",
+    "lora",
+    "cuda",
+    "rocm",
+    "pytorch",
+    "machine-learning"
+  ],
+  "upstream": {
+    "type": "custom",
+    "url": "https://github.com/unslothai/unsloth.git",
+    "branch": "main"
+  },
+  "packageFile": "version.json",
+  "versionScheme": "rev-only",
+  "hashes": [
+    { "field": "hash", "file": "version.json" }
+  ],
+  "verify": {
+    "binary": null,
+    "args": null,
+    "check": "eval"
+  }
+}
