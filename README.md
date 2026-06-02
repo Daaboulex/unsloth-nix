@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 <!-- END generated:badges -->
 
-[Unsloth](https://github.com/unslothai/unsloth) — finetune LLMs 2× faster with ~70% less memory — packaged as a Nix flake. Tracks `unsloth` + `unsloth-zoo` from **git main** (always latest) glued onto nixpkgs' cached PyTorch / Transformers / PEFT / TRL stack (robust, substituted, never forked). Ships ready-to-deploy **CPU**, **CUDA**, and **ROCm** Python environments, dev shells, a NixOS module, and a runnable demo.
+[Unsloth](https://github.com/unslothai/unsloth) — finetune LLMs 2x faster with ~70% less memory — packaged as a Nix flake. Tracks `unsloth` + `unsloth-zoo` from **git main** (always latest) glued onto nixpkgs' cached PyTorch / Transformers / PEFT / TRL stack (robust, substituted, never forked). Ships ready-to-deploy **CPU**, **CUDA**, and **ROCm** Python environments, dev shells, a NixOS module, and a runnable demo.
 
 <!-- BEGIN generated:upstream -->
 ## Upstream
@@ -14,7 +14,7 @@
 | | |
 |---|---|
 | **Project** | <https://github.com/unslothai/unsloth> (+ [unsloth-zoo](https://github.com/unslothai/unsloth-zoo)) |
-| **License** | unsloth: Apache-2.0 · unsloth-zoo: LGPL-3.0-or-later (this packaging: MIT) |
+| **License** | unsloth: Apache-2.0; unsloth-zoo: LGPL-3.0-or-later (this packaging: MIT) |
 | **Tracked** | Git HEAD (`main`) of both repos |
 
 The pinned commits, source hashes, and versions are the single source of truth
@@ -29,7 +29,7 @@ commits the bump to `main`.
 lags upstream by weeks — and Unsloth iterates fast (new model support, kernels,
 and bug fixes land on `main` constantly). This flake follows `main` for the two
 small, pure-Python Unsloth packages while inheriting the *entire* heavy
-dependency stack (torch, xformers, bitsandbytes, triton, transformers, …)
+dependency stack (torch, xformers, bitsandbytes, triton, transformers, ...)
 unchanged from nixpkgs. You get the latest Unsloth on a robust, cache-backed
 foundation, with three accelerator targets and the full CI + auto-update
 contract of the [Daaboulex Nix Packaging Standard](https://github.com/Daaboulex/nix-packaging-standard).
