@@ -37,6 +37,19 @@ in
         env = (old.env or { }) // {
           SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth-zoo.version;
         };
+
+        # nixpkgs ships dont-require-unsloth.patch (a context patch that strips
+        # the two "raise ImportError(... install Unsloth ...)" guards so zoo
+        # builds/imports standalone despite the unsloth<->zoo circular dep). That
+        # patch is cut against the PyPI sdist and does NOT apply to git main,
+        # which moved both guards inside `if` blocks. Drop it and reproduce its
+        # effect position/indent-agnostically — robust across upstream churn.
+        patches = [ ];
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace unsloth_zoo/__init__.py \
+            --replace-warn 'raise ImportError("Please install Unsloth via `pip install unsloth`!")' \
+                           'pass  # nix: zoo builds standalone (unsloth<->zoo circular dep)'
+        '';
       });
 
       unsloth = pyprev.unsloth.overridePythonAttrs (old: {
