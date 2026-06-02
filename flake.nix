@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     std = {
-      url = "github:Daaboulex/nix-packaging-standard?ref=v2.4.0";
+      url = "github:Daaboulex/nix-packaging-standard?ref=v2.5.0";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.git-hooks.follows = "git-hooks";
     };
@@ -73,20 +73,6 @@
           let
             e = envsFor system;
 
-            # Eval-gate: force the FULL derivation graph of an env to EVALUATE
-            # (catching version/dep/accelerator breakage) WITHOUT realizing it.
-            # `builtins.seq env.drvPath` forces the whole withPackages closure's
-            # drvPaths transitively; `env` is NOT a build input, so CI never
-            # builds the uncached CUDA/ROCm torch. Modeled on
-            # std.lib.nixosModuleCheck. (Negative-engineering: this fails loudly
-            # if the overlay or a dep stops evaluating under the accel config —
-            # verified by temporarily breaking the overlay hash.)
-            evalGate =
-              name: env:
-              e.pkgsCpu.runCommand "unsloth-${name}-eval" {
-                ok = builtins.seq env.drvPath "evaluated";
-              } ''printf '%s\n' "$ok" > "$out"'';
-
             # The demo runs through the CUDA env's own interpreter.
             demoApp = e.pkgsCuda.writeShellApplication {
               name = "unsloth-demo";
@@ -116,9 +102,21 @@
                 touch "$out"
               '';
 
-              # Eval-only gates for the uncached GPU envs.
-              cuda-eval = evalGate "cuda" e.cudaEnv;
-              rocm-eval = evalGate "rocm" e.rocmEnv;
+              # Eval-only gates for the uncached GPU envs: force the full
+              # build graph to EVALUATE (catching dep/version/accelerator
+              # breakage) without realizing the uncached CUDA/ROCm torch. The
+              # heavy build happens off-CI (see README); std.lib.drvEvalCheck is
+              # the standard's blessed helper for off-CI packages.
+              cuda-eval = inputs.std.lib.drvEvalCheck {
+                pkgs = e.pkgsCpu;
+                name = "unsloth-cuda-eval";
+                drv = e.cudaEnv;
+              };
+              rocm-eval = inputs.std.lib.drvEvalCheck {
+                pkgs = e.pkgsCpu;
+                name = "unsloth-rocm-eval";
+                drv = e.rocmEnv;
+              };
 
               # Module instantiation gate (cpu accelerator => no GPU host config).
               module-eval-nixos = inputs.std.lib.nixosModuleCheck {
