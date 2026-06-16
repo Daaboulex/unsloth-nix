@@ -1,6 +1,6 @@
 {
   "package": "unsloth-nix",
-  "description": "Unsloth (git main) packaged for NixOS — CPU/CUDA/ROCm LoRA fine-tuning envs",
+  "description": "Unsloth (git main) packaged for NixOS - CPU/CUDA/ROCm LoRA fine-tuning envs, overlay, module, demo",
   "topics": [
     "nix",
     "nixos",
@@ -22,7 +22,10 @@
   "packageFile": "version.json",
   "versionScheme": "rev-only",
   "hashes": [
-    { "field": "hash", "file": "version.json" }
+    {
+      "field": "hash",
+      "file": "version.json"
+    }
   ],
   "verify": {
     "binary": null,
