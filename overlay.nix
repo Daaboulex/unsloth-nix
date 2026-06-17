@@ -52,6 +52,14 @@ in
         '';
       });
 
+      # accelerate's multi-process CPU tests are flaky inside the nix build sandbox: two
+      # consecutive CUDA-env builds (2026-06-10) failed on DIFFERENT tests of the same family
+      # (Gloo connectFullMesh "connection closed by peer", then MultiCPUTester::test_ops spawn).
+      # Disable ONLY that file -- 240+ other tests still run; the package itself is unchanged.
+      accelerate = pyprev.accelerate.overridePythonAttrs (old: {
+        disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [ "tests/test_cpu.py" ];
+      });
+
       unsloth = pyprev.unsloth.overridePythonAttrs (old: {
         inherit (v.unsloth) version;
         src = mkSrc "unsloth" v.unsloth;

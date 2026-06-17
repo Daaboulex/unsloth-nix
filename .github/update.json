@@ -31,5 +31,8 @@
     "binary": null,
     "args": null,
     "check": "eval"
+  },
+  "platforms": {
+    "aarch64-linux": "torchao dep marks aarch64 badPlatforms; CUDA/ML x86-only"
   }
 }
