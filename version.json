@@ -1,13 +1,13 @@
 {
   "unsloth": {
-    "rev": "49d1fb38633b2e5b640f7034a3e69734a16396ac",
-    "hash": "sha256-KgejH++SE4e5rzVoo7MyaI0a0RA3zB9Fur9GVfT+7OA=",
-    "version": "2026.4.5-unstable-2026-07-08"
+    "rev": "b509d47dd7427a1ba9ff1c80d1ca64fb9889bddf",
+    "hash": "sha256-whwAlOY2ZiiOLGGg4tGUA+g8YM4Acz0afVQnj2q3Lwg=",
+    "version": "2026.4.5-unstable-2026-07-09"
   },
   "unsloth-zoo": {
-    "rev": "1554e9b968ee50e133fb571b9a5757260efd0496",
-    "hash": "sha256-0DcjNhFlS8fXMeBkMr8MHqLZds0h5NgUHu3gf3tcqic=",
-    "version": "2026.4.7-unstable-2026-07-08"
+    "rev": "70932b8eb497f88a38ba172b88d04baf063b9720",
+    "hash": "sha256-3X2qSGrMhIBH74t1YNNlQ3fKNXhisPepyo7xPfTZZkg=",
+    "version": "2026.4.7-unstable-2026-07-09"
   },
-  "date": "2026-07-08"
+  "date": "2026-07-09"
 }
