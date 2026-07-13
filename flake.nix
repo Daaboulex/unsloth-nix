@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     std = {
-      url = "github:Daaboulex/nix-packaging-standard?ref=v2.8.0";
+      url = "github:Daaboulex/nix-packaging-standard?ref=v2.9.1";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.git-hooks.follows = "git-hooks";
     };
@@ -166,15 +166,20 @@
                     e.pkgsCuda.unslothPython.pkgs.jupyter
                     e.pkgsCuda.nil
                   ];
+                  # Custom shells bypass base's default shell -- pin dev state
+                  # into .devshell/ the same way (never $HOME).
+                  shellHook = inputs.std.lib.devStateHook;
                 }
               );
               cpu = e.pkgsCpu.mkShell {
                 inputsFrom = [ config.pre-commit.devShell ];
                 packages = [ e.cpuEnv ];
+                shellHook = inputs.std.lib.devStateHook;
               };
               rocm = e.pkgsRocm.mkShell {
                 inputsFrom = [ config.pre-commit.devShell ];
                 packages = [ e.rocmEnv ];
+                shellHook = inputs.std.lib.devStateHook;
               };
             };
 
