@@ -26,6 +26,11 @@ let
     };
 in
 {
+  # The interpreter every consumer builds the env from — module.nix and
+  # lib.nix consume this seam, never pkgs.python3 directly, so a temporary
+  # fix in overlays/ can repoint the whole stack at another interpreter.
+  unslothPython = final.python3;
+
   pythonPackagesExtensions = (prev.pythonPackagesExtensions or [ ]) ++ [
     (_pyfinal: pyprev: {
       unsloth-zoo = pyprev.unsloth-zoo.overridePythonAttrs (old: {

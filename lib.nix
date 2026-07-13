@@ -46,7 +46,9 @@ let
     ps.ipython
   ];
 
-  mkEnv = pkgs: pkgs.python3.withPackages pyStack;
+  # unslothPython is the overlay's interpreter seam (python3 unless a
+  # temporary fix in overlays/ repoints it).
+  mkEnv = pkgs: pkgs.unslothPython.withPackages pyStack;
 
   pkgsCpu = mkPkgs { };
   pkgsCuda = mkPkgs { cudaSupport = true; };

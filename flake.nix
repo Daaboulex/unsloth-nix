@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     std = {
-      url = "github:Daaboulex/nix-packaging-standard?ref=v2.7.1";
+      url = "github:Daaboulex/nix-packaging-standard?ref=v2.8.0";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.git-hooks.follows = "git-hooks";
     };
@@ -24,6 +24,21 @@
     flake-parts.lib.mkFlake { inherit inputs; } (
       let
         systems = [ "x86_64-linux" ];
+
+        glueOverlay = import ./overlay.nix;
+
+        # Temporary nixpkgs fixes (standard convention, "Temporary nixpkgs
+        # overlays" in the standard's README): one { meta, dropWhen, overlay }
+        # file per fix under overlays/; scripts/heal-overlays.sh (Maintenance)
+        # deletes a fix once its dropWhen fires against the un-fixed pkgs.
+        fixOverlays =
+          let
+            dir = ./overlays;
+            names = if builtins.pathExists dir then builtins.attrNames (builtins.readDir dir) else [ ];
+          in
+          map (n: (import (dir + "/${n}")).overlay) (
+            builtins.filter (n: inputs.nixpkgs.lib.hasSuffix ".nix" n) names
+          );
 
         # The three accelerator envs for a given system, from the single shared
         # builder — used by both perSystem (below) and flake.packages (bottom).
@@ -41,7 +56,12 @@
         imports = [ inputs.std.flakeModules.base ];
 
         # System-independent flake outputs.
-        flake.overlays.default = import ./overlay.nix;
+        flake.overlays = {
+          # Glue + temporary fixes — what consumers and this flake apply.
+          default = inputs.nixpkgs.lib.composeManyExtensions ([ glueOverlay ] ++ fixOverlays);
+          # Glue WITHOUT fixes — heal-overlays.sh probes dropWhen against this.
+          probe = glueOverlay;
+        };
         flake.nixosModules.default = import ./module.nix;
 
         # Raw per-system package surface. base.nix auto-aliases ONLY
@@ -143,7 +163,7 @@
                   inputsFrom = [ config.pre-commit.devShell ];
                   packages = [
                     e.cudaEnv
-                    e.pkgsCuda.python3Packages.jupyter
+                    e.pkgsCuda.unslothPython.pkgs.jupyter
                     e.pkgsCuda.nil
                   ];
                 }

@@ -15,7 +15,9 @@
 let
   cfg = config.programs.unsloth;
 
-  env = pkgs.python3.withPackages (ps: [
+  # unslothPython comes from this flake's overlay (the interpreter seam;
+  # python3 unless a temporary fix in overlays/ repoints it).
+  env = pkgs.unslothPython.withPackages (ps: [
     ps.unsloth
     ps.unsloth-zoo
     ps.torch
@@ -54,7 +56,7 @@ in
     package = lib.mkOption {
       type = lib.types.package;
       default = env;
-      defaultText = lib.literalexpression "the Unsloth python3 environment";
+      defaultText = lib.literalexpression "the Unsloth python environment";
       description = "The Python environment package added to systemPackages.";
     };
   };
