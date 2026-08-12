@@ -139,7 +139,4 @@ This packaging flake is [MIT](./LICENSE). Upstream `unsloth` is Apache-2.0 and
 shipped by nixpkgs.
 
 <!-- BEGIN generated:footer -->
----
-
-*Maintained as part of the [Daaboulex](https://github.com/Daaboulex) NixOS ecosystem.*
 <!-- END generated:footer -->
