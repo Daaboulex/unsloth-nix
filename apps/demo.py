@@ -17,7 +17,7 @@ import sys
 def _version(module: str) -> str:
     try:
         return getattr(importlib.import_module(module), "__version__", "unknown")
-    except Exception as exc:  # noqa: BLE001 — report, don't crash the banner
+    except Exception as exc:
         return f"<import error: {exc}>"
 
 
@@ -64,7 +64,7 @@ def main() -> int:
     print("\nLoading a tiny model with Unsloth (FastLanguageModel)…")
     from unsloth import FastLanguageModel
 
-    model, tokenizer = FastLanguageModel.from_pretrained(
+    model, _tokenizer = FastLanguageModel.from_pretrained(
         model_name=os.environ.get("UNSLOTH_DEMO_MODEL", "unsloth/Qwen2.5-0.5B"),
         max_seq_length=512,
         load_in_4bit=True,
