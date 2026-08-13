@@ -33,7 +33,7 @@ command -v jq >/dev/null || die config-error "jq is required" 1
 [ -f "$VERSION_JSON" ] || die config-error "version.json not found" 1
 
 # repo name on GitHub keyed by the version.json attribute name
-declare -A GH_REPO=( [unsloth]=unsloth [unsloth-zoo]=unsloth-zoo )
+declare -A GH_REPO=([unsloth]=unsloth [unsloth - zoo]=unsloth-zoo)
 
 old_unsloth=$(jq -r '.unsloth.rev' "$VERSION_JSON")
 old_zoo=$(jq -r '."unsloth-zoo".rev' "$VERSION_JSON")
@@ -46,7 +46,7 @@ for key in unsloth unsloth-zoo; do
   NEW_REV[$key]=$rev
 done
 
-if [ "${NEW_REV[unsloth]}" = "$old_unsloth" ] && [ "${NEW_REV[unsloth-zoo]}" = "$old_zoo" ]; then
+if [ "${NEW_REV[unsloth]}" = "$old_unsloth" ] && [ "${NEW_REV[unsloth - zoo]}" = "$old_zoo" ]; then
   echo "Already up to date (unsloth ${old_unsloth:0:7}, unsloth-zoo ${old_zoo:0:7})."
   out updated false
   out package_name "$PACKAGE_NAME"
@@ -64,7 +64,10 @@ for key in unsloth unsloth-zoo; do
 
   # nix-prefetch-github yields the exact NAR hash fetchFromGitHub expects.
   hash=$(nix run nixpkgs#nix-prefetch-github -- unslothai "${GH_REPO[$key]}" --rev "$rev" --json 2>/dev/null | jq -r '.hash')
-  [ -n "$hash" ] && [ "$hash" != "null" ] || { rm -f "$tmp"; die network-error "prefetch failed for ${GH_REPO[$key]}" 2; }
+  [ -n "$hash" ] && [ "$hash" != "null" ] || {
+    rm -f "$tmp"
+    die network-error "prefetch failed for ${GH_REPO[$key]}" 2
+  }
 
   # rev-only scheme: bump rev + hash + a date-stamped version, keep the base.
   base=$(jq -r --arg k "$key" '.[$k].version | sub("-unstable-.*$"; "")' "$VERSION_JSON")
