@@ -52,7 +52,7 @@ in
         patches = [ ];
         postPatch = (old.postPatch or "") + ''
           substituteInPlace unsloth_zoo/__init__.py \
-            --replace-warn 'raise ImportError("Please install Unsloth via `pip install unsloth`!")' \
+            --replace-fail 'raise ImportError("Please install Unsloth via `pip install unsloth`!")' \
                            'pass  # nix: zoo builds standalone (unsloth<->zoo circular dep)'
         '';
       });
