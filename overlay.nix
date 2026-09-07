@@ -75,6 +75,12 @@ in
         inherit (v.unsloth) version;
         src = mkSrc "unsloth" v.unsloth;
 
+        # nixpkgs' inherited postPatch replaces this exact literal; git main's own pins never match it.
+        postPatch = ''
+          sed -E -i 's/^requires[[:space:]]*=[[:space:]]*\["setuptools==[^"]*",[[:space:]]*"setuptools-scm==[^"]*"\][[:space:]]*$/requires = ["setuptools==80.9.0", "setuptools-scm==9.2.0"]/' pyproject.toml
+        ''
+        + (old.postPatch or "");
+
         env = (old.env or { }) // {
           SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth.version;
         };
