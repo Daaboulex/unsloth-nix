@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     std = {
-      url = "github:Daaboulex/nix-packaging-standard?ref=v2.35.0";
+      url = "github:Daaboulex/nix-packaging-standard?ref=v2.37.0";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.git-hooks.follows = "git-hooks";
     };
@@ -154,33 +154,42 @@
               };
             };
 
-            # Dev shells layer the env onto the standard's lint/format shell
-            # (config.pre-commit.devShell) — never drop it. `default` overrides
-            # the standard's lint-only shell (mkForce) but keeps its hooks + nil.
+            # Dev shells layer the env onto the standard's hooks through
+            # mkDevShell, which puts the dev-state pins ahead of the hook
+            # install. `default` overrides the lint-only shell (mkForce).
             devShells = {
               default = lib.mkForce (
-                e.pkgsCuda.mkShell {
-                  inputsFrom = [ config.pre-commit.devShell ];
-                  packages = [
-                    e.cudaEnv
-                    e.pkgsCuda.unslothPython.pkgs.jupyter
-                    e.pkgsCuda.nil
-                  ];
-                  # Custom shells bypass base's default shell -- pin dev state
-                  # into .devshell/ the same way (never $HOME).
-                  shellHook = inputs.std.lib.devStateHook;
-                }
+                inputs.std.lib.mkDevShell
+                  {
+                    pkgs = e.pkgsCuda;
+                    inherit config;
+                  }
+                  {
+                    packages = [
+                      e.cudaEnv
+                      e.pkgsCuda.unslothPython.pkgs.jupyter
+                      e.pkgsCuda.nil
+                    ];
+                  }
               );
-              cpu = e.pkgsCpu.mkShell {
-                inputsFrom = [ config.pre-commit.devShell ];
-                packages = [ e.cpuEnv ];
-                shellHook = inputs.std.lib.devStateHook;
-              };
-              rocm = e.pkgsRocm.mkShell {
-                inputsFrom = [ config.pre-commit.devShell ];
-                packages = [ e.rocmEnv ];
-                shellHook = inputs.std.lib.devStateHook;
-              };
+              cpu =
+                inputs.std.lib.mkDevShell
+                  {
+                    pkgs = e.pkgsCpu;
+                    inherit config;
+                  }
+                  {
+                    packages = [ e.cpuEnv ];
+                  };
+              rocm =
+                inputs.std.lib.mkDevShell
+                  {
+                    pkgs = e.pkgsRocm;
+                    inherit config;
+                  }
+                  {
+                    packages = [ e.rocmEnv ];
+                  };
             };
 
             apps.default = {
