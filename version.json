@@ -1,7 +1,7 @@
 {
   "unsloth": {
-    "rev": "c2bb6e340c94a07c4282ee2b575f2ed5008b55d8",
-    "hash": "sha256-Zzmzo8qDzHntkqp64tDM5OcvPQyJkfJ1PSYjnJ5XzGc=",
+    "rev": "46792093a2132b3cf1004d98e1b6a12fcda030d7",
+    "hash": "sha256-EDHdYETyzaqBF5GoU0tUrsNRb0Eb6BTK+HWYIxHEbrc=",
     "version": "2026.4.5-unstable-2026-09-07"
   },
   "unsloth-zoo": {
