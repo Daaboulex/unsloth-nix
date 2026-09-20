@@ -83,10 +83,18 @@ mv "$tmp" "$VERSION_JSON"
 new_u=$(jq -r '.unsloth.rev' "$VERSION_JSON")
 new_z=$(jq -r '."unsloth-zoo".rev' "$VERSION_JSON")
 
-# --- verify: eval forces the cuda/rocm gates; build the cache-backed cpu env ---
-if ! nix flake check --no-build "$REPO_ROOT"; then
+clog=$(mktemp)
+nix flake check --no-eval-cache --print-build-logs "$REPO_ROOT" 2>&1 | tee "$clog"
+rc=${PIPESTATUS[0]}
+if [ "$rc" -ne 0 ]; then
+  if grep -qE "Cannot build '/nix/store/[^']+\.drv'" "$clog"; then
+    rm -f "$clog"
+    die build-error "nix flake check failed after bump"
+  fi
+  rm -f "$clog"
   die eval-error "nix flake check failed after bump"
 fi
+rm -f "$clog"
 if ! nix build --no-link "$REPO_ROOT#cpu"; then
   die build-error "nix build .#cpu failed after bump"
 fi
