@@ -4,7 +4,8 @@
 #
 # Only `src`, `version`, and the setuptools-scm pretend-version are replaced;
 # nixpkgs' own `postPatch` (strips the AGPL-licensed CLI/Studio/MOE kernels,
-# unpins setuptools, narrows the datasets guard), `pythonRelaxDeps`,
+# narrows the datasets guard; its setuptools unpin runs quiet, since git main
+# moves those pins and the build skips pypa's dependency check), `pythonRelaxDeps`,
 # `pythonRemoveDeps`, `dependencies`, `patches` (unsloth-zoo's
 # dont-require-unsloth.patch) and `meta` are all INHERITED untouched. The whole
 # robust dependency stack (torch/transformers/peft/trl/… ) stays exactly as
@@ -24,6 +25,34 @@ let
       inherit repo;
       inherit (spec) rev hash;
     };
+
+  quietBuildSystemUnpin =
+    name: postPatch:
+    let
+      inherit (final) lib;
+      step =
+        acc: line:
+        let
+          opens = lib.hasPrefix "substituteInPlace pyproject.toml" line;
+          inCall = acc.inCall || opens;
+        in
+        {
+          inCall = inCall && lib.hasSuffix "\\" line;
+          hit = acc.hit || (inCall && lib.hasInfix "--replace-fail" line);
+          lines = acc.lines ++ [
+            (if inCall then lib.replaceStrings [ "--replace-fail" ] [ "--replace-quiet" ] line else line)
+          ];
+        };
+      walked = lib.foldl' step {
+        inCall = false;
+        hit = false;
+        lines = [ ];
+      } (lib.splitString "\n" postPatch);
+    in
+    if walked.hit then
+      lib.concatStringsSep "\n" walked.lines
+    else
+      throw "unsloth-nix: nixpkgs no longer unpins ${name}'s build system with `substituteInPlace pyproject.toml --replace-fail`; re-read its postPatch and update quietBuildSystemUnpin in overlay.nix";
 in
 {
   # The interpreter every consumer builds the env from — module.nix and
@@ -32,7 +61,7 @@ in
   unslothPython = final.python3;
 
   pythonPackagesExtensions = (prev.pythonPackagesExtensions or [ ]) ++ [
-    (_pyfinal: pyprev: {
+    (pyfinal: pyprev: {
       unsloth-zoo = pyprev.unsloth-zoo.overridePythonAttrs (old: {
         inherit (v.unsloth-zoo) version;
         src = mkSrc "unsloth-zoo" v.unsloth-zoo;
@@ -50,7 +79,10 @@ in
         # which moved both guards inside `if` blocks. Drop it and reproduce its
         # effect position/indent-agnostically — robust across upstream churn.
         patches = [ ];
-        postPatch = (old.postPatch or "") + ''
+        pypaBuildFlags = (old.pypaBuildFlags or [ ]) ++ [ "--skip-dependency-check" ];
+        dependencies = (old.dependencies or [ ]) ++ [ pyfinal.einops ];
+        pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "certifi" ];
+        postPatch = quietBuildSystemUnpin "unsloth-zoo" old.postPatch + ''
           substituteInPlace unsloth_zoo/__init__.py \
             --replace-fail 'raise ImportError("Please install Unsloth via `pip install unsloth`!")' \
                            'pass  # nix: zoo builds standalone (unsloth<->zoo circular dep)'
@@ -75,11 +107,8 @@ in
         inherit (v.unsloth) version;
         src = mkSrc "unsloth" v.unsloth;
 
-        # nixpkgs' inherited postPatch replaces this exact literal; git main's own pins never match it.
-        postPatch = ''
-          sed -E -i 's/^requires[[:space:]]*=[[:space:]]*\["setuptools==[^"]*",[[:space:]]*"setuptools-scm==[^"]*"\][[:space:]]*$/requires = ["setuptools==80.9.0", "setuptools-scm==9.2.0"]/' pyproject.toml
-        ''
-        + (old.postPatch or "");
+        pypaBuildFlags = (old.pypaBuildFlags or [ ]) ++ [ "--skip-dependency-check" ];
+        postPatch = quietBuildSystemUnpin "unsloth" old.postPatch;
 
         env = (old.env or { }) // {
           SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth.version;
@@ -89,7 +118,10 @@ in
         # relax so the git pair installs against each other. Extend (never
         # replace) nixpkgs' list. New upstream dep pins surface on the daily
         # bump's CPU build — add them here when they do (fail-loud by design).
-        pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "unsloth-zoo" ];
+        pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [
+          "unsloth-zoo"
+          "certifi"
+        ];
       });
     })
   ];

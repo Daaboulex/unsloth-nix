@@ -41,10 +41,14 @@ old_zoo=$(jq -r '."unsloth-zoo".rev' "$VERSION_JSON")
 # --- detect upstream movement (network -> exit 2 on failure) ---
 declare -A NEW_REV
 for key in unsloth unsloth-zoo; do
-  rev=$(git ls-remote "https://github.com/unslothai/${GH_REPO[$key]}.git" refs/heads/main 2>/dev/null | cut -f1)
+  rev=$(git ls-remote "https://github.com/unslothai/${GH_REPO[$key]}.git" refs/heads/main | cut -f1)
   [ -n "$rev" ] || die network-error "git ls-remote failed for ${GH_REPO[$key]}" 2
   NEW_REV[$key]=$rev
 done
+
+out package_name "$PACKAGE_NAME"
+out old_version "${old_unsloth:0:7}+${old_zoo:0:7}"
+out new_version "${NEW_REV["unsloth"]:0:7}+${NEW_REV["unsloth-zoo"]:0:7}"
 
 if [ "${NEW_REV["unsloth"]}" = "$old_unsloth" ] && [ "${NEW_REV["unsloth-zoo"]}" = "$old_zoo" ]; then
   echo "Already up to date (unsloth ${old_unsloth:0:7}, unsloth-zoo ${old_zoo:0:7})."
@@ -63,7 +67,7 @@ for key in unsloth unsloth-zoo; do
   [ "$rev" = "$cur" ] && continue
 
   # nix-prefetch-github yields the exact NAR hash fetchFromGitHub expects.
-  hash=$(nix run nixpkgs#nix-prefetch-github -- unslothai "${GH_REPO[$key]}" --rev "$rev" --json 2>/dev/null | jq -r '.hash')
+  hash=$(nix run --inputs-from "$REPO_ROOT" nixpkgs#nix-prefetch-github -- unslothai "${GH_REPO[$key]}" --rev "$rev" --json | jq -r ".hash")
   [ -n "$hash" ] && [ "$hash" != "null" ] || {
     rm -f "$tmp"
     die network-error "prefetch failed for ${GH_REPO[$key]}" 2
@@ -84,7 +88,7 @@ new_u=$(jq -r '.unsloth.rev' "$VERSION_JSON")
 new_z=$(jq -r '."unsloth-zoo".rev' "$VERSION_JSON")
 
 clog=$(mktemp)
-nix flake check --no-eval-cache --print-build-logs "$REPO_ROOT" 2>&1 | tee "$clog"
+nix flake check --keep-going --no-eval-cache --print-build-logs "$REPO_ROOT" 2>&1 | tee "$clog"
 rc=${PIPESTATUS[0]}
 if [ "$rc" -ne 0 ]; then
   if grep -qE "Cannot build '/nix/store/[^']+\.drv'" "$clog"; then
