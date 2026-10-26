@@ -122,6 +122,7 @@ in
           "unsloth-zoo"
           "certifi"
         ];
+        dependencies = (old.dependencies or [ ]) ++ [ pyfinal.json5 ];
       });
     })
   ];
