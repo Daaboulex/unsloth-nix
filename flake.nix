@@ -16,9 +16,10 @@
   };
 
   # Note: the GPU caches needed to substitute CUDA/ROCm torch are configured by
-  # the user (see README "Building the GPU envs"), NOT via a flake `nixConfig`
-  # block — the latter emits an "ignoring untrusted flake configuration" warning
-  # on every command and is ignored by the byte-locked CI anyway.
+  # the user (see docs/DEVELOPMENT.md "Building the GPU environments"), NOT via
+  # a flake `nixConfig` block — the latter emits an "ignoring untrusted flake
+  # configuration" warning on every command and is ignored by the byte-locked
+  # CI anyway.
   outputs =
     inputs@{ flake-parts, self, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } (
@@ -108,9 +109,9 @@
             };
           in
           {
-            # ONLY the CPU env is a built check: its deps are the cached
-            # default-config builds, so CI realizes just the tiny pure-Python
-            # git-overridden unsloth + unsloth-zoo on top.
+            # ONLY the CPU env is a built check: CI builds the git-overridden
+            # unsloth + unsloth-zoo, accelerate and what depends on it from
+            # source. The rest is the cached default-config builds.
             packages.cpu = e.cpuEnv;
 
             checks = {
@@ -120,7 +121,7 @@
               # currently only supports GPUs!" — nixpkgs sets
               # dontUsePythonImportsCheck for the same reason). Building the env
               # already validates that they BUILD; importing them needs a GPU
-              # runner, which CI is not. The CUDA/ROCm demo app exercises that.
+              # runner, which CI is not. The CUDA demo app exercises that.
               smoke-cpu = e.pkgsCpu.runCommand "unsloth-smoke-cpu" { } ''
                 ${e.cpuEnv}/bin/python - <<'PY'
                 import torch, transformers, datasets, accelerate, peft, trl

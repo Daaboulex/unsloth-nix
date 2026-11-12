@@ -90,14 +90,21 @@ nix develop github:Daaboulex/unsloth-nix
 
 ## GPU builds need a binary cache
 
-CUDA and ROCm PyTorch are not on `cache.nixos.org`. Add the community GPU cache
-once, so you do not compile PyTorch from source. The command installs the
-signing key for you. The first line is for CUDA, the second for ROCm.
+CUDA PyTorch is not on `cache.nixos.org`. Add the nixos-cuda cache once, so
+you do not compile PyTorch from source:
 
-```bash
-cachix use cuda-maintainers
-cachix use nixos-rocm
+```nix
+nix.settings = {
+  extra-substituters = [ "https://cache.nixos-cuda.org" ];
+  extra-trusted-public-keys = [
+    "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+  ];
+};
 ```
+
+There is no cache to recommend for the ROCm environment. nixpkgs builds its
+ROCm packages on Hydra, but a PyTorch with ROCm support may still compile on
+your machine.
 
 A one-off build that passes the cache on the command line is in
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

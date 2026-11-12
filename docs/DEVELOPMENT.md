@@ -24,15 +24,11 @@ What each check covers is in [COMPATIBILITY.md](COMPATIBILITY.md).
 ## Building the GPU environments
 
 CUDA and ROCm PyTorch are not on `cache.nixos.org`, so the CUDA and ROCm
-environments are not built in CI. Build them on a machine configured with the
-community GPU cache, so you do not compile torch from source. Add the cache
-once. It installs the correct signing key for you. `cuda-maintainers` carries
-the CUDA artifacts and `nixos-rocm` the ROCm ones for AMD.
+environments are not built in CI. Build the CUDA one on a machine that has the
+nixos-cuda cache configured (the README shows the two settings), so you do
+not compile torch from source. There is no cache to recommend for ROCm.
 
 ```bash
-cachix use cuda-maintainers
-cachix use nixos-rocm
-
 nix build github:Daaboulex/unsloth-nix#cuda
 nix build github:Daaboulex/unsloth-nix#rocm
 ```
@@ -41,8 +37,8 @@ Or pass the substituter inline for a one-off CUDA build:
 
 ```bash
 nix build github:Daaboulex/unsloth-nix#cuda \
-  --extra-substituters https://cuda-maintainers.cachix.org \
-  --extra-trusted-public-keys cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E=
+  --extra-substituters https://cache.nixos-cuda.org \
+  --extra-trusted-public-keys cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M=
 ```
 
 ## The demo

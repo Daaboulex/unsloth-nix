@@ -2,15 +2,15 @@
 # pythonPackagesExtensions so it composes with EVERY python3 the consuming
 # nixpkgs builds — at any accelerator config (CPU / cudaSupport / rocmSupport).
 #
-# Only `src`, `version`, and the setuptools-scm pretend-version are replaced;
-# nixpkgs' own `postPatch` (strips the AGPL-licensed CLI/Studio/MOE kernels,
-# narrows the datasets guard; its setuptools unpin runs quiet, since git main
-# moves those pins and the build skips pypa's dependency check), `pythonRelaxDeps`,
-# `pythonRemoveDeps`, `dependencies`, `patches` (unsloth-zoo's
-# dont-require-unsloth.patch) and `meta` are all INHERITED untouched. The whole
-# robust dependency stack (torch/transformers/peft/trl/… ) stays exactly as
-# nixpkgs ships it, substituted from cache.nixos.org — only the two pure-Python
-# unsloth packages track git main.
+# `src`, `version` and the setuptools-scm pretend-version are replaced,
+# `dependencies` and `pythonRelaxDeps` are extended, and unsloth-zoo's `patches`
+# (dont-require-unsloth.patch) are dropped. nixpkgs' own `postPatch` (strips the
+# AGPL-licensed CLI/Studio/MOE kernels, narrows the datasets guard; its
+# setuptools unpin runs quiet, since git main moves those pins and the build
+# skips pypa's dependency check), `pythonRemoveDeps` and `meta` are INHERITED.
+# `accelerate` is rebuilt with its tests off, so it and what depends on it build
+# from source. The rest of the dependency stack stays exactly as nixpkgs ships
+# it, substituted from cache.nixos.org.
 #
 # The pinned revs + hashes are the single source of truth in ./version.json,
 # bumped daily by scripts/update.sh.
