@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 <!-- END generated:badges -->
 
-[Unsloth](https://github.com/unslothai/unsloth) — finetune LLMs 2x faster with ~70% less memory — packaged as a Nix flake. Tracks `unsloth` + `unsloth-zoo` from **git main** (always latest) glued onto nixpkgs' cached PyTorch / Transformers / PEFT / TRL stack (robust, substituted, never forked). Ships ready-to-deploy **CPU**, **CUDA**, and **ROCm** Python environments, dev shells, a NixOS module, and a runnable demo.
+[Unsloth](https://github.com/unslothai/unsloth), a library for fine-tuning LLMs, packaged as a Nix flake. It tracks `unsloth` and `unsloth-zoo` from upstream's `main` branch on top of nixpkgs' PyTorch, Transformers, PEFT and TRL packages. `accelerate` is rebuilt with its tests off, so it and every package that depends on it build from source; the packages that do not depend on it are the unchanged nixpkgs builds. The flake provides **CPU**, **CUDA** and **ROCm** Python environments, dev shells, a NixOS module and a demo app.
 
 <!-- BEGIN generated:upstream -->
 ## Upstream
@@ -18,8 +18,9 @@
 | **Tracked** | Git HEAD (`main`) of both repos |
 
 The pinned commits, source hashes, and versions are the single source of truth
-in [`version.json`](./version.json). The daily `update.yml` workflow runs the
-custom [`scripts/update.sh`](./scripts/update.sh), which re-pins both repos and
+in [`version.json`](./version.json). The daily
+[`update.yml`](./.github/workflows/update.yml) workflow runs the custom
+[`scripts/update.sh`](./scripts/update.sh), which re-pins both repos and
 commits the bump to `main`.
 <!-- END generated:upstream -->
 
@@ -28,22 +29,27 @@ commits the bump to `main`.
 `nixpkgs` ships `python3Packages.unsloth`, but it tracks the PyPI release and
 lags upstream by weeks — and Unsloth iterates fast (new model support, kernels,
 and bug fixes land on `main` constantly). This flake follows `main` for the two
-small, pure-Python Unsloth packages while inheriting the *entire* heavy
-dependency stack (torch, xformers, bitsandbytes, triton, transformers, ...)
-unchanged from nixpkgs. You get the latest Unsloth on a robust, cache-backed
-foundation, with three accelerator targets and the full CI + auto-update
-contract of the [Daaboulex Nix Packaging Standard](https://github.com/Daaboulex/nix-packaging-standard).
+pure-Python Unsloth packages and takes the rest of the dependency stack (torch,
+xformers, bitsandbytes, triton, transformers, ...) from nixpkgs. Three things
+differ from the nixpkgs packages: `accelerate` is rebuilt with its tests off, so
+it and every package that depends on it build from source; `unsloth-zoo` gains
+`einops` and `unsloth` gains `json5` as dependencies; and `overlays.default`
+also applies the temporary nixpkgs fixes in [`overlays/`](./overlays/). The
+flake has three accelerator targets and follows the
+[Nix Packaging Standard](https://github.com/Daaboulex/nix-packaging-standard)
+for CI and updates.
 
 ## Outputs
 
 | Output | What |
 |---|---|
 | `packages.default` / `packages.cuda` | CUDA Python env (primary; NVIDIA GPU) |
-| `packages.cpu` | CPU Python env (cache-backed; built in CI) |
+| `packages.cpu` | CPU Python env, built in CI: `unsloth`, `unsloth-zoo`, `accelerate` and the packages that depend on it build from source, the rest is substituted from `cache.nixos.org` |
 | `packages.rocm` | ROCm Python env (AMD GPU; experimental — see below) |
 | `devShells.{default,cpu,rocm}` | env + lint hooks (`default` adds Jupyter) |
 | `apps.default` | `unsloth-demo` — assert CUDA + print the stack |
-| `overlays.default` | git-main `unsloth`/`unsloth-zoo` override for your own nixpkgs |
+| `overlays.default` | git-main `unsloth`/`unsloth-zoo` override for your own nixpkgs, plus the temporary nixpkgs fixes |
+| `overlays.probe` | the same override without the temporary nixpkgs fixes |
 | `nixosModules.default` | `programs.unsloth.enable` — install an env system-wide |
 
 <!-- BEGIN generated:installation -->
@@ -102,8 +108,7 @@ nix build github:Daaboulex/unsloth-nix#cuda \
 > **ROCm is experimental.** Unsloth's hard dependencies (`xformers`,
 > `bitsandbytes`) are CUDA-centric and AMD/ROCm support across the stack is
 > still maturing in nixpkgs, so the `rocm` env may fail to evaluate on a given
-> `nixpkgs` pin. The `rocm-eval` CI gate reports this honestly rather than
-> hiding it.
+> `nixpkgs` pin. The `rocm-eval` check fails when that happens.
 
 ## Development
 
@@ -114,29 +119,17 @@ nix flake check              # eval-gates + std-conformance + schema (no heavy b
 nix flake show               # confirm outputs
 ```
 
-`nix flake check` is fast: it evaluates the CUDA/ROCm envs (catching breakage)
-but only *builds* the cache-backed CPU env.
-
-## Repository Structure
-
-```text
-unsloth-nix/
-├── flake.nix          # outputs: envs (cpu/cuda/rocm), overlay, module, app, checks
-├── lib.nix            # shared env builder (one overlay, three accelerator pkgs sets)
-├── overlay.nix        # pythonPackagesExtensions: git-main unsloth + unsloth-zoo
-├── module.nix         # nixosModules.default — programs.unsloth
-├── version.json       # pinned revs + hashes + versions (source of truth)
-├── apps/demo.py       # apps.default — unsloth-demo
-├── scripts/update.sh  # custom updater: re-pin both git srcs
-├── LICENSE            # MIT (packaging glue)
-└── README.md
-```
+`nix flake check` evaluates the CUDA and ROCm envs and builds only the CPU env.
+In that build `unsloth`, `unsloth-zoo`, `accelerate` and the packages that
+depend on it build from source; the rest is substituted from `cache.nixos.org`.
 
 ## License
 
 This packaging flake is [MIT](./LICENSE). Upstream `unsloth` is Apache-2.0 and
 `unsloth-zoo` is LGPL-3.0-or-later; their `meta.license` is preserved as
-shipped by nixpkgs.
+shipped by nixpkgs. Upstream's LICENSE file for `unsloth` states that the files
+under `studio/` and `unsloth_cli/`, which are optional to install, are
+AGPL-3.0.
 
 <!-- BEGIN generated:footer -->
 <!-- END generated:footer -->

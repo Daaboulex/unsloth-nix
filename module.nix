@@ -56,7 +56,7 @@ in
     package = lib.mkOption {
       type = lib.types.package;
       default = env;
-      defaultText = lib.literalexpression "the Unsloth python environment";
+      defaultText = lib.literalExpression "the Unsloth python environment";
       description = "The Python environment package added to systemPackages.";
     };
   };
