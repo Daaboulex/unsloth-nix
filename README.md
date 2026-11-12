@@ -1,127 +1,133 @@
 # unsloth-nix
 
-<!-- BEGIN generated:badges -->
-[![CI](https://github.com/Daaboulex/unsloth-nix/actions/workflows/ci.yml/badge.svg)](https://github.com/Daaboulex/unsloth-nix/actions/workflows/ci.yml)
-[![NixOS unstable](https://img.shields.io/badge/NixOS-unstable-78C0E8?logo=nixos&logoColor=white)](https://nixos.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-<!-- END generated:badges -->
+[Unsloth](https://github.com/unslothai/unsloth), a library for fine-tuning
+LLMs, packaged as a Nix flake. It follows the `main` branch of `unsloth` and
+[`unsloth-zoo`](https://github.com/unslothai/unsloth-zoo) and takes the rest of
+the stack, PyTorch, Transformers, PEFT and TRL among it, from nixpkgs. It is
+for people who want a newer Unsloth than `python3Packages.unsloth` in nixpkgs,
+which tracks the PyPI release.
 
-[Unsloth](https://github.com/unslothai/unsloth), a library for fine-tuning LLMs, packaged as a Nix flake. It tracks `unsloth` and `unsloth-zoo` from upstream's `main` branch on top of nixpkgs' PyTorch, Transformers, PEFT and TRL packages. `accelerate` is rebuilt with its tests off, so it and every package that depends on it build from source; the packages that do not depend on it are the unchanged nixpkgs builds. The flake provides **CPU**, **CUDA** and **ROCm** Python environments, dev shells, a NixOS module and a demo app.
+It builds for `x86_64-linux` only. CI builds the CPU environment and imports
+its libraries, all but Unsloth itself, which refuses to load without a GPU.
+The CUDA and ROCm environments are only evaluated there, never built or run.
+ROCm is experimental.
 
-<!-- BEGIN generated:upstream -->
-## Upstream
+## What you get
 
-| | |
-|---|---|
-| **Project** | <https://github.com/unslothai/unsloth> (+ [unsloth-zoo](https://github.com/unslothai/unsloth-zoo)) |
-| **License** | unsloth: Apache-2.0; unsloth-zoo: LGPL-3.0-or-later (this packaging: MIT) |
-| **Tracked** | Git HEAD (`main`) of both repos |
+- Three Python environments: `cuda` for NVIDIA GPUs, which is also the default
+  package, `rocm` for AMD GPUs and `cpu`.
+- A NixOS module, `programs.unsloth`, that installs an environment system-wide.
+- A demo, `unsloth-demo`, that checks for a GPU and prints the version of each
+  library.
+- An overlay that puts the `main` builds of `unsloth` and `unsloth-zoo` into
+  your own nixpkgs.
 
-The pinned commits, source hashes, and versions are the single source of truth
-in [`version.json`](./version.json). The daily
-[`update.yml`](./.github/workflows/update.yml) workflow runs the custom
-[`scripts/update.sh`](./scripts/update.sh), which re-pins both repos and
-commits the bump to `main`.
-<!-- END generated:upstream -->
+Each environment is a Python interpreter with `unsloth`, `unsloth-zoo`,
+`torch`, `transformers`, `peft`, `trl`, `datasets`, `accelerate` and IPython.
+The full list is in [lib.nix](lib.nix).
 
-## Why?
+## Install
 
-`nixpkgs` ships `python3Packages.unsloth`, but it tracks the PyPI release and
-lags upstream by weeks — and Unsloth iterates fast (new model support, kernels,
-and bug fixes land on `main` constantly). This flake follows `main` for the two
-pure-Python Unsloth packages and takes the rest of the dependency stack (torch,
-xformers, bitsandbytes, triton, transformers, ...) from nixpkgs. Three things
-differ from the nixpkgs packages: `accelerate` is rebuilt with its tests off, so
-it and every package that depends on it build from source; `unsloth-zoo` gains
-`einops` and `unsloth` gains `json5` as dependencies; and `overlays.default`
-also applies the temporary nixpkgs fixes in [`overlays/`](./overlays/). The
-flake has three accelerator targets and follows the
-[Nix Packaging Standard](https://github.com/Daaboulex/nix-packaging-standard)
-for CI and updates.
-
-## Outputs
-
-| Output | What |
-|---|---|
-| `packages.default` / `packages.cuda` | CUDA Python env (primary; NVIDIA GPU) |
-| `packages.cpu` | CPU Python env, built in CI: `unsloth`, `unsloth-zoo`, `accelerate` and the packages that depend on it build from source, the rest is substituted from `cache.nixos.org` |
-| `packages.rocm` | ROCm Python env (AMD GPU; experimental — see below) |
-| `devShells.{default,cpu,rocm}` | env + lint hooks (`default` adds Jupyter) |
-| `apps.default` | `unsloth-demo` — assert CUDA + print the stack |
-| `overlays.default` | git-main `unsloth`/`unsloth-zoo` override for your own nixpkgs, plus the temporary nixpkgs fixes |
-| `overlays.probe` | the same override without the temporary nixpkgs fixes |
-| `nixosModules.default` | `programs.unsloth.enable` — install an env system-wide |
-
-<!-- BEGIN generated:installation -->
-## Installation
-
-Run the CUDA demo (NVIDIA host), or build an env directly:
-
-```bash
-nix run github:Daaboulex/unsloth-nix             # CUDA demo: assert GPU + print stack
-nix build github:Daaboulex/unsloth-nix#cpu       # CPU env
-nix build github:Daaboulex/unsloth-nix#cuda      # CUDA env (NVIDIA)
-nix build github:Daaboulex/unsloth-nix#rocm      # ROCm env (AMD, experimental)
-nix develop github:Daaboulex/unsloth-nix         # CUDA dev shell + Jupyter
-```
-
-As a flake input with the NixOS module:
+Add the flake:
 
 ```nix
 {
   inputs.unsloth-nix.url = "github:Daaboulex/unsloth-nix";
-
-  # in your host config:
-  imports = [ inputs.unsloth-nix.nixosModules.default ];
-  nixpkgs.overlays = [ inputs.unsloth-nix.overlays.default ];
-  nixpkgs.config = { allowUnfree = true; cudaSupport = true; };
-  programs.unsloth = { enable = true; accelerator = "cuda"; };
 }
 ```
 
-<!-- END generated:installation -->
+Then import the module, apply the overlay and switch it on. This is the
+configuration for an NVIDIA machine. CUDA is unfree.
 
-## Building the GPU envs (off-CI)
+```nix
+{
+  imports = [ inputs.unsloth-nix.nixosModules.default ];
+  nixpkgs.overlays = [ inputs.unsloth-nix.overlays.default ];
+  nixpkgs.config = {
+    allowUnfree = true;
+    cudaSupport = true;
+  };
 
-CUDA/ROCm PyTorch is **not** on `cache.nixos.org`, so the CUDA and ROCm envs
-are not built in CI (CI builds and verifies only the CPU env and eval-gates the
-GPU envs). Build them on a machine configured with the community GPU cache so
-you don't compile torch from source. Add the cache once (it installs the
-correct signing key for you):
+  programs.unsloth = {
+    enable = true;
+    accelerator = "cuda";
+  };
+}
+```
+
+The module builds the environment from your own nixpkgs, which is why it needs
+the overlay. `accelerator` is `cuda`, `rocm` or `cpu`, and `cuda` is the
+default.
+
+`accelerator` has to match your nixpkgs configuration. `cuda` needs
+`nixpkgs.config.cudaSupport = true` and a configured `hardware.nvidia` stack.
+`rocm` needs `nixpkgs.config.rocmSupport = true` and the ROCm and amdgpu stack.
+A missing flag is refused with a message that says so.
+
+Every option, with its type and default: [docs/OPTIONS.md](docs/OPTIONS.md).
+
+## Use it without NixOS
+
+Run the demo on a machine with an NVIDIA GPU:
 
 ```bash
-cachix use cuda-maintainers          # CUDA artifacts
-cachix use nixos-rocm                # ROCm artifacts (AMD)
+nix run github:Daaboulex/unsloth-nix
+```
 
+It prints the version of each library and checks that PyTorch sees the GPU.
+With `UNSLOTH_DEMO_TRAIN=1` set it also downloads a small model from Hugging
+Face and attaches LoRA adapters to it.
+
+Build one environment, or open a shell that has the CUDA environment and
+Jupyter:
+
+```bash
 nix build github:Daaboulex/unsloth-nix#cuda
 nix build github:Daaboulex/unsloth-nix#rocm
+nix build github:Daaboulex/unsloth-nix#cpu
+nix develop github:Daaboulex/unsloth-nix
 ```
 
-Or pass the substituter inline for a one-off CUDA build:
+## GPU builds need a binary cache
+
+CUDA and ROCm PyTorch are not on `cache.nixos.org`. Add the community GPU cache
+once, so you do not compile PyTorch from source. The command installs the
+signing key for you. The first line is for CUDA, the second for ROCm.
 
 ```bash
-nix build github:Daaboulex/unsloth-nix#cuda \
-  --extra-substituters https://cuda-maintainers.cachix.org \
-  --extra-trusted-public-keys cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E=
+cachix use cuda-maintainers
+cachix use nixos-rocm
 ```
 
-> **ROCm is experimental.** Unsloth's hard dependencies (`xformers`,
-> `bitsandbytes`) are CUDA-centric and AMD/ROCm support across the stack is
-> still maturing in nixpkgs, so the `rocm` env may fail to evaluate on a given
-> `nixpkgs` pin. The `rocm-eval` check fails when that happens.
+A one-off build that passes the cache on the command line is in
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-## Development
+## Known limits
 
-```bash
-nix develop                  # dev shell + pre-commit hooks
-nix fmt                      # format
-nix flake check              # eval-gates + std-conformance + schema (no heavy build)
-nix flake show               # confirm outputs
-```
+- `x86_64-linux` only.
+- Unsloth refuses to load without a GPU, so the CPU environment builds but
+  cannot `import unsloth`.
+- ROCm may fail to evaluate on a given nixpkgs pin. Unsloth's hard
+  dependencies, `xformers` and `bitsandbytes`, are CUDA-centric, and ROCm
+  support across the stack is still maturing in nixpkgs.
+- Not everything comes from a cache. `unsloth`, `unsloth-zoo`, `accelerate` and
+  the packages that depend on `accelerate` build from source.
+- The demo checks for an NVIDIA GPU only and exits with an error without one.
 
-`nix flake check` evaluates the CUDA and ROCm envs and builds only the CPU env.
-In that build `unsloth`, `unsloth-zoo`, `accelerate` and the packages that
-depend on it build from source; the rest is substituted from `cache.nixos.org`.
+## When something does not work
+
+Run the demo. Where a library fails to import, it prints the import error in
+place of that library's version.
+
+## More
+
+- [docs/DESIGN.md](docs/DESIGN.md): why it follows `main`, what differs from
+  nixpkgs, every output of the flake
+- [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md): what CI checks for each
+  environment, and what it does not
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): the checks, building the GPU
+  environments, how the pinned commits are updated
+- [SECURITY.md](SECURITY.md): how to report a vulnerability
 
 ## License
 
@@ -130,6 +136,3 @@ This packaging flake is [MIT](./LICENSE). Upstream `unsloth` is Apache-2.0 and
 shipped by nixpkgs. Upstream's LICENSE file for `unsloth` states that the files
 under `studio/` and `unsloth_cli/`, which are optional to install, are
 AGPL-3.0.
-
-<!-- BEGIN generated:footer -->
-<!-- END generated:footer -->
