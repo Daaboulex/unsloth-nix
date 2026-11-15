@@ -34,6 +34,7 @@ command -v jq >/dev/null || die config-error "jq is required" 1
 
 # repo name on GitHub keyed by the version.json attribute name
 declare -A GH_REPO=(["unsloth"]=unsloth ["unsloth-zoo"]=unsloth-zoo)
+declare -A VERSION_FILE=(["unsloth"]=unsloth/_version.py ["unsloth-zoo"]=unsloth_zoo/__init__.py)
 
 old_unsloth=$(jq -r '.unsloth.rev' "$VERSION_JSON")
 old_zoo=$(jq -r '."unsloth-zoo".rev' "$VERSION_JSON")
@@ -73,8 +74,15 @@ for key in unsloth unsloth-zoo; do
     die network-error "prefetch failed for ${GH_REPO[$key]}" 2
   }
 
-  # rev-only scheme: bump rev + hash + a date-stamped version, keep the base.
-  base=$(jq -r --arg k "$key" '.[$k].version | sub("-unstable-.*$"; "")' "$VERSION_JSON")
+  source=$(nix eval --raw --impure --expr "(builtins.fetchTree { type = \"github\"; owner = \"unslothai\"; repo = \"${GH_REPO[$key]}\"; rev = \"$rev\"; }).outPath") || {
+    rm -f "$tmp"
+    die network-error "source fetch failed for ${GH_REPO[$key]}" 2
+  }
+  base=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "$source/${VERSION_FILE[$key]}")
+  [ -n "$base" ] || {
+    rm -f "$tmp"
+    die config-error "no __version__ in ${VERSION_FILE[$key]} of ${GH_REPO[$key]}" 1
+  }
   jq --arg k "$key" --arg rev "$rev" --arg hash "$hash" --arg ver "${base}-unstable-${DATE}" \
     '.[$k].rev=$rev | .[$k].hash=$hash | .[$k].version=$ver' "$tmp" >"$tmp.next" && mv "$tmp.next" "$tmp"
 done

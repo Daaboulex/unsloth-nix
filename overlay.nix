@@ -26,6 +26,8 @@ let
       inherit (spec) rev hash;
     };
 
+  sourceVersion = version: final.lib.head (final.lib.splitString "-unstable-" version);
+
   quietBuildSystemUnpin =
     name: postPatch:
     let
@@ -70,23 +72,13 @@ in
         # cannot infer the version the PyPI sdist exposes — pin it explicitly.
         env = (old.env or { }) // {
           SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth-zoo.version;
+          CUDA_VISIBLE_DEVICES = "-1";
         };
 
-        # nixpkgs ships dont-require-unsloth.patch (a context patch that strips
-        # the two "raise ImportError(... install Unsloth ...)" guards so zoo
-        # builds/imports standalone despite the unsloth<->zoo circular dep). That
-        # patch is cut against the PyPI sdist and does NOT apply to git main,
-        # which moved both guards inside `if` blocks. Drop it and reproduce its
-        # effect position/indent-agnostically — robust across upstream churn.
-        patches = [ ];
         pypaBuildFlags = (old.pypaBuildFlags or [ ]) ++ [ "--skip-dependency-check" ];
         dependencies = (old.dependencies or [ ]) ++ [ pyfinal.einops ];
         pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "certifi" ];
-        postPatch = quietBuildSystemUnpin "unsloth-zoo" old.postPatch + ''
-          substituteInPlace unsloth_zoo/__init__.py \
-            --replace-fail 'raise ImportError("Please install Unsloth via `pip install unsloth`!")' \
-                           'pass  # nix: zoo builds standalone (unsloth<->zoo circular dep)'
-        '';
+        postPatch = quietBuildSystemUnpin "unsloth-zoo" old.postPatch;
       });
 
       # We override accelerate ONLY to escape its test suite, which is flaky inside
@@ -108,10 +100,22 @@ in
         src = mkSrc "unsloth" v.unsloth;
 
         pypaBuildFlags = (old.pypaBuildFlags or [ ]) ++ [ "--skip-dependency-check" ];
-        postPatch = quietBuildSystemUnpin "unsloth" old.postPatch;
+        postPatch =
+          final.lib.replaceStrings
+            [ ''__version__ = "${v.unsloth.version}"'' ]
+            [ ''__version__ = "${sourceVersion v.unsloth.version}"'' ]
+            (quietBuildSystemUnpin "unsloth" old.postPatch)
+          + ''
+
+            substituteInPlace unsloth/import_fixes.py \
+              --replace-fail \
+                'os.environ.get("UNSLOTH_SKIP_TORCHVISION_CHECK", "0")' \
+                'os.environ.get("UNSLOTH_SKIP_TORCHVISION_CHECK", "1")'
+          '';
 
         env = (old.env or { }) // {
           SETUPTOOLS_SCM_PRETEND_VERSION = v.unsloth.version;
+          CUDA_VISIBLE_DEVICES = "-1";
         };
 
         # git main can pin unsloth-zoo to a newer release than nixpkgs ships;
