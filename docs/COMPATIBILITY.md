@@ -12,11 +12,10 @@ What is checked for each environment, and by which check in
 
 ## What the CPU check leaves out
 
-`unsloth` and `unsloth-zoo` are not imported in `checks.smoke-cpu`. Both raise
-at import time without a GPU ("Unsloth currently only supports GPUs!"), and
-nixpkgs sets `dontUsePythonImportsCheck` on them for the same reason. Building
-the environment shows that they build. Importing them needs a GPU, which is
-what the demo in [apps/demo.py](../apps/demo.py) does on the CUDA environment.
+`checks.smoke-cpu` does not import `unsloth` or `unsloth-zoo`. Their own builds
+do: the import check nixpkgs runs on both imports them without a GPU, and
+Unsloth falls back to its CPU backend. Nothing in CI trains a model. The demo in
+[apps/demo.py](../apps/demo.py) runs on the CUDA environment and needs a GPU.
 
 ## CUDA and ROCm
 

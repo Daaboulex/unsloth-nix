@@ -116,13 +116,6 @@
             packages.cpu = e.cpuEnv;
 
             checks = {
-              # Real (cheap) build: the interpreter imports the CPU-importable
-              # stack. unsloth / unsloth-zoo are deliberately NOT imported here:
-              # both raise at import time without a GPU (upstream "Unsloth
-              # currently only supports GPUs!" — nixpkgs sets
-              # dontUsePythonImportsCheck for the same reason). Building the env
-              # already validates that they BUILD; importing them needs a GPU
-              # runner, which CI is not. The CUDA demo app exercises that.
               smoke-cpu = e.pkgsCpu.runCommand "unsloth-smoke-cpu" { } ''
                 ${e.cpuEnv}/bin/python - <<'PY'
                 import torch, transformers, datasets, accelerate, peft, trl
