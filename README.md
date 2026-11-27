@@ -7,10 +7,13 @@ the stack, PyTorch, Transformers, PEFT and TRL among it, from nixpkgs. It is
 for people who want a newer Unsloth than `python3Packages.unsloth` in nixpkgs,
 which tracks the PyPI release.
 
-It builds for `x86_64-linux` only. CI builds the CPU environment and imports
-its libraries, all but Unsloth itself, which refuses to load without a GPU.
-The CUDA and ROCm environments are only evaluated there, never built or run.
-ROCm is experimental.
+It builds for `x86_64-linux` only. ROCm is experimental. What CI does with each
+package:
+
+| Package | CI |
+|---|---|
+| `cpu` | builds it |
+| `default`, `cuda`, `rocm` | evaluates them, never builds or runs them |
 
 ## What you get
 
@@ -112,8 +115,6 @@ A one-off build that passes the cache on the command line is in
 ## Known limits
 
 - `x86_64-linux` only.
-- Unsloth refuses to load without a GPU, so the CPU environment builds but
-  cannot `import unsloth`.
 - ROCm may fail to evaluate on a given nixpkgs pin. Unsloth's hard
   dependencies, `xformers` and `bitsandbytes`, are CUDA-centric, and ROCm
   support across the stack is still maturing in nixpkgs.
