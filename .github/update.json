@@ -28,6 +28,6 @@
     }
   ],
   "platforms": {
-    "aarch64-linux": "torchao dep marks aarch64 badPlatforms; CUDA/ML x86-only"
+    "aarch64-linux": "unsloth-zoo depends on torchao, which nixpkgs marks bad on aarch64-linux"
   }
 }

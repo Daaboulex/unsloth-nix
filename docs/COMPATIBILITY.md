@@ -33,5 +33,5 @@ The `rocm-eval` check fails when that happens.
 ## Platforms
 
 The flake declares `x86_64-linux` alone. `.github/update.json` records why
-`aarch64-linux` is out: the `torchao` dependency marks aarch64 as a bad
-platform, and the CUDA and machine-learning stack is x86-only.
+`aarch64-linux` is out: `unsloth-zoo` depends on `torchao`, which nixpkgs
+marks as a bad platform on aarch64.

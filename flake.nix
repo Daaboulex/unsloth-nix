@@ -49,6 +49,7 @@
             inherit (inputs) nixpkgs;
             inherit system;
             overlay = self.overlays.default;
+            platforms = systems;
           };
       in
       {

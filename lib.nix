@@ -13,6 +13,7 @@
   nixpkgs,
   system,
   overlay,
+  platforms,
 }:
 let
   mkPkgs =
@@ -48,7 +49,8 @@ let
 
   # unslothPython is the overlay's interpreter seam (python3 unless a
   # temporary fix in overlays/ repoints it).
-  mkEnv = pkgs: pkgs.unslothPython.withPackages pyStack;
+  mkEnv =
+    pkgs: pkgs.lib.addMetaAttrs { inherit platforms; } (pkgs.unslothPython.withPackages pyStack);
 
   pkgsCpu = mkPkgs { };
   pkgsCuda = mkPkgs { cudaSupport = true; };
