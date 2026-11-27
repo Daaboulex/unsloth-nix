@@ -36,7 +36,7 @@ multi-process Gloo races in two CUDA environment builds on 2026-06-10, and a
 numerically fragile gradient-sync assertion in `test_sync.py` on 2026-06-18.
 None of `accelerate`'s code is changed.
 
-`unsloth-zoo` gains `einops` and `unsloth` gains `json5` as dependencies.
+`unsloth-zoo` gains `einops` as a dependency.
 
 `overlays.default` also applies every temporary nixpkgs fix under `overlays/`.
 
