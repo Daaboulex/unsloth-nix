@@ -6,7 +6,7 @@
 # `dependencies` and `pythonRelaxDeps` are extended, and unsloth-zoo's `patches`
 # (dont-require-unsloth.patch) are dropped. nixpkgs' own `postPatch` (strips the
 # AGPL-licensed CLI/Studio/MOE kernels, narrows the datasets guard; its
-# setuptools unpin runs quiet, since git main moves those pins and the build
+# setuptools unpin is dropped, since git main moves those pins and the build
 # skips pypa's dependency check), `pythonRemoveDeps` and `meta` are INHERITED.
 # `accelerate` is rebuilt with its tests off, so it and what depends on it build
 # from source. The rest of the dependency stack stays exactly as nixpkgs ships
@@ -28,7 +28,7 @@ let
 
   sourceVersion = version: final.lib.head (final.lib.splitString "-unstable-" version);
 
-  quietBuildSystemUnpin =
+  dropBuildSystemUnpin =
     name: postPatch:
     let
       inherit (final) lib;
@@ -41,9 +41,7 @@ let
         {
           inCall = inCall && lib.hasSuffix "\\" line;
           hit = acc.hit || (inCall && lib.hasInfix "--replace-fail" line);
-          lines = acc.lines ++ [
-            (if inCall then lib.replaceStrings [ "--replace-fail" ] [ "--replace-quiet" ] line else line)
-          ];
+          lines = acc.lines ++ lib.optional (!inCall) line;
         };
       walked = lib.foldl' step {
         inCall = false;
@@ -54,7 +52,7 @@ let
     if walked.hit then
       lib.concatStringsSep "\n" walked.lines
     else
-      throw "unsloth-nix: nixpkgs no longer unpins ${name}'s build system with `substituteInPlace pyproject.toml --replace-fail`; re-read its postPatch and update quietBuildSystemUnpin in overlay.nix";
+      throw "unsloth-nix: nixpkgs no longer unpins ${name}'s build system with `substituteInPlace pyproject.toml --replace-fail`; re-read its postPatch and update dropBuildSystemUnpin in overlay.nix";
 in
 {
   # The interpreter every consumer builds the env from — module.nix and
@@ -78,7 +76,7 @@ in
         pypaBuildFlags = (old.pypaBuildFlags or [ ]) ++ [ "--skip-dependency-check" ];
         dependencies = (old.dependencies or [ ]) ++ [ pyfinal.einops ];
         pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "certifi" ];
-        postPatch = quietBuildSystemUnpin "unsloth-zoo" old.postPatch;
+        postPatch = dropBuildSystemUnpin "unsloth-zoo" old.postPatch;
       });
 
       # We override accelerate ONLY to escape its test suite, which is flaky inside
@@ -104,7 +102,7 @@ in
           final.lib.replaceStrings
             [ ''__version__ = "${v.unsloth.version}"'' ]
             [ ''__version__ = "${sourceVersion v.unsloth.version}"'' ]
-            (quietBuildSystemUnpin "unsloth" old.postPatch)
+            (dropBuildSystemUnpin "unsloth" old.postPatch)
           + ''
 
             substituteInPlace unsloth/import_fixes.py \
