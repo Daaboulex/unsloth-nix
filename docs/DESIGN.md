@@ -38,8 +38,7 @@ None of `accelerate`'s code is changed.
 
 `unsloth-zoo` gains `einops` and `unsloth` gains `json5` as dependencies.
 
-`overlays.default` also applies the temporary nixpkgs fixes in
-[overlays/](../overlays/).
+`overlays.default` also applies every temporary nixpkgs fix under `overlays/`.
 
 ## How the two packages are overridden
 
@@ -99,7 +98,7 @@ torch is never shipped under a `cuda` label.
 
 ## Temporary fixes
 
-A temporary nixpkgs fix is one file under [overlays/](../overlays/) holding a
+A temporary nixpkgs fix is one file under `overlays/` holding a
 `meta`, a `dropWhen` and an `overlay`. `overlays.default` is the override plus
 those fixes. `overlays.probe` is the override alone: the standard's maintenance
 run tests each `dropWhen` against it and deletes a fix once it is no longer
